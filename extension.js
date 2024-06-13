@@ -8,20 +8,18 @@
 // view log: journalctl /usr/bin/gnome-session -f -o cat
 
 
-const Meta = imports.gi.Meta;
-const St = imports.gi.St;
-const Lang = imports.lang;
-const Main = imports.ui.main;
-const Shell = imports.gi.Shell;
-const ExtensionUtils = imports.misc.extensionUtils;
-
-const Me = ExtensionUtils.getCurrentExtension();
+import Meta from 'gi://Meta';
+import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Shell from 'gi://Shell';
+import Extension from 'resource:///org/gnome/shell/extensions/extension.js';
 
 var windowSearchProvider = null;
 
 var windowSearchProviderDebug = false;
 
-const {Gio, GLib} = imports.gi;
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 
 
 function logDebug(a,b,c,d,e) {
@@ -105,21 +103,23 @@ function makeResult(window, i) {
   }
 }
 
-
-const WindowSearchProvider = new Lang.Class({
+export default class WindowSearchProvider extends Extension {
   Name: 'WindowSearchProvider',
   // appInfo: true,
 
   canLaunchSearch: true,
   isRemoteProvider: false,
 
-  _init: function (title, categoryType) {
+  constructor() {
+  }
+
+  _init(title, categoryType) {
     logDebug(`title: ${title}, cat: ${categoryType}`)
     let prefs_file = "unkown"
 
     try {
 
-      const default_prefs_file = Me.dir.get_path() + "/prefs.json"
+      const default_prefs_file = "./prefs.json"
       const config_prefs_file = GLib.get_home_dir() + "/.config/gnome-shell-window-search-provider/prefs.json"
 
       const cpf = Gio.File.new_for_path(config_prefs_file)
@@ -168,9 +168,9 @@ const WindowSearchProvider = new Lang.Class({
     this.windows = null;
 
     logDebug("_init");
-  },
+  }
 
-  _getResultSet: function (terms) {
+  _getResultSet (terms) {
     logDebug("getResultSet");
     var resultIds = [];
     var candidates = this.windows;
@@ -268,9 +268,9 @@ const WindowSearchProvider = new Lang.Class({
     logDebug("resultSet: ", this.resultIds);
 
     return this.resultIds;
-  },
+  }
 
-  getResultMetas: function (resultIds, callback) {
+  getResultMetas(resultIds, callback) {
     logDebug("result metas for name: " + resultIds.join(" "));
     let _this = this;
     let metas = resultIds.map(function (id) { return _this._getResultMeta(id); });
@@ -284,9 +284,9 @@ const WindowSearchProvider = new Lang.Class({
       logDebug("metas NOT called with callback: " + callback)
       return metas;
     }
-  },
+  }
 
-  _getResultMeta: function (resultId) {
+  _getResultMeta(resultId) {
     logDebug("getResultMeta: " + resultId);
     var result = this.windows[resultId];
     const app = Shell.WindowTracker.get_default().get_window_app(result.window);
@@ -298,14 +298,14 @@ const WindowSearchProvider = new Lang.Class({
       // TODO: do highlighting of search term (i.e. for fuzzy matching)
 //      'description': "hel<b>lo</b> "+result.windowTitle,
       'description': result.appName,
-      'createIcon': function (size) {
+      'createIcon'(size) {
         logDebug('createIcon size='+size);
         return app.create_icon_texture(size);
       }
     }
-  },
+  }
 
-  activateResult: function (resultId, terms) {
+  activateResult(resultId, terms) {
     logDebug("action: " + this.action)
     if (this.action === "activate") {
       var result = this.windows[resultId]
@@ -326,14 +326,14 @@ const WindowSearchProvider = new Lang.Class({
       }
       Main.overview.hide();
     }
-  },
+  }
 
-  launchSearch: function (result) {
+  launchSearch(result) {
     logDebug("launchSearch: " + result);
     // Main.activateWindow(result.window);
-  },
+  }
 
-  getInitialResultSet: function (terms, callback, cancellable) {
+  getInitialResultSet(terms, callback, cancellable) {
     logDebug("getInitialResultSet: " + terms.join(" ") + " callback: " + callback + " cancellable: " + cancellable);
     var windows = null
     this.windows = windows = {};
@@ -352,33 +352,30 @@ const WindowSearchProvider = new Lang.Class({
       logDebug("return resultset")
       return resultSet || []
     }
-  },
+  }
 
-  filterResults: function (results, maxResults) {
+  filterResults(results, maxResults) {
     logDebug("filterResults", results, maxResults);
     //return results.slice(0, maxResults);
     return results;
-  },
+  }
 
-  getSubsearchResultSet: function (previousResults, terms, callback, cancellable) {
+  getSubsearchResultSet(previousResults, terms, callback, cancellable) {
     logDebug("getSubSearchResultSet: " + terms.join(" "));
     this.getInitialResultSet(terms, callback, cancellable);
-  },
+  }
 
-  // createIcon: function (size, meta) {
+  // createIcon(size, meta) {
   //   logDebug("createIcon");
   //   // TODO: implement meta icon?
   // },
 
-  // createResultOjbect: function (resultMeta) {
+  // createResultOjbect(resultMeta) {
   //   const app = Shell.WindowTracker.get_default().get_window_app(resultMeta.id);
   //   return new AppIcon(app);
   // }
 
 });
-
-function init() {
-}
 
 function getOverviewSearchResult() {
   if (Main.overview.viewSelector !== undefined) {
